@@ -31,10 +31,9 @@ class NaiveBayes:
         self.stopList = set(self.readFile(os.path.join('data', 'english.stop')))
 
         #TODO: add other data structures needed in classify() and/or addExample() below
-        self.counts_pos = set()
-        self.counts_neg = set()
+        self.counts_pos = defaultdict(int)
+        self.counts_neg = defaultdict(int)
         self.num_docs = defaultdict(int)
-        self.vocab = set()
         self.V = -1
         self.T_pos = -1
         self.T_neg = -1
@@ -63,36 +62,38 @@ class NaiveBayes:
         logPriorNeg = math.log(float(self.num_docs['neg']) / total_docs)
 
         if self.T_pos == -1:
-            self.T_pos = len(self.counts_pos)
+            self.T_pos = sum(self.counts_pos.values())
         if self.T_neg == -1:
-            self.T_neg = len(self.counts_neg)
+            self.T_neg = sum(self.counts_neg.values())
         if self.V == -1:
-            self.V = len(self.vocab)
+            self.V = len(set(list(self.counts_pos.keys()) + list(self.counts_neg.keys())))
        
 
         logProbPos = logPriorPos 
         logProbNeg = logPriorNeg
 
+        seen = set()
         if self.USE_BIGRAMS:
             words = ['<s>'] + words + ['</s>']
-
             for ix in range(0,len(words)-1):
                 w = (words[ix],words[ix+1])
-                if w in self.counts_pos or w in self.counts_neg:
-                    print("here")
-                    loglikelihoodPos = math.log(1 / (self.T_pos + self.V))
-                    loglikelihoodNeg = math.log(1/ (self.T_neg + self.V))
-                    logProbPos += loglikelihoodPos
-                    logProbNeg += loglikelihoodNeg
+                if w not in seen:
+                    seen.add(w)
+                    if w in self.counts_pos or w in self.counts_neg:
+                        loglikelihoodPos = math.log(float(self.counts_pos[w] + 1) / (self.T_pos + self.V))
+                        loglikelihoodNeg = math.log(float(self.counts_neg[w] + 1) / (self.T_neg + self.V))
+                        logProbPos += loglikelihoodPos
+                        logProbNeg += loglikelihoodNeg
 
         else:
             for w in words:
-                if w in self.counts_pos or w in self.counts_neg:
-                    print("here")
-                    loglikelihoodPos = math.log(1/ (self.T_pos + self.V))
-                    loglikelihoodNeg = math.log(1 / (self.T_neg + self.V))
-                    logProbPos += loglikelihoodPos
-                    logProbNeg += loglikelihoodNeg
+                if w not in seen:
+                    seen.add(w)
+                    if w in self.counts_pos or w in self.counts_neg:
+                        loglikelihoodPos = math.log(float(self.counts_pos[w] + 1) / (self.T_pos + self.V))
+                        loglikelihoodNeg = math.log(float(self.counts_neg[w] + 1) / (self.T_neg + self.V))
+                        logProbPos += loglikelihoodPos
+                        logProbNeg += loglikelihoodNeg
 
 
         if logProbPos >= logProbNeg:
@@ -103,23 +104,26 @@ class NaiveBayes:
     def addExample(self, klass, words):
         self.num_docs[klass] += 1
 
+        seen = set()
         if self.USE_BIGRAMS:
             words = ['<s>'] + words +  ['</s>']
 
             for ix in range(0,len(words)-1):
                 w = (words[ix],words[ix+1])
-                self.vocab.add(w)
-                if klass == 'pos':
-                    self.counts_pos.add(w)
-                else:
-                    self.counts_neg.add(w)
+                if w not in seen:
+                    seen.add(w)
+                    if klass == 'pos':
+                        self.counts_pos[w] += 1
+                    else:
+                        self.counts_neg[w] += 1
         else:
             for word in words:
-                self.vocab.add(word)
-                if klass == 'pos':
-                    self.counts_pos.add(word)
-                else:
-                    self.counts_neg.add(word)
+                if word not in seen:
+                    seen.add(word)
+                    if klass == 'pos':
+                        self.counts_pos[word] += 1
+                    else:
+                        self.counts_neg[word] += 1
 
 
 # END TODO(Modify code beyond here with caution)#######################################################################################
