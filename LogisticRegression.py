@@ -67,10 +67,14 @@ class LogisticRegression:
     """
     def train(self, trainData):
         ### Start your code here 
-        
-
-
+        corpus = []
+        for example in trainData:
+            corpus.append(example.words)
+            self.Y.append(example.klass)
         # Use self.vect to create your sparse unigram matrix here
+        vectorizer = self.vect
+
+        self.X = vectorizer.fit_transform(corpus)
 
         ## End your code here
 
@@ -84,13 +88,15 @@ class LogisticRegression:
         ## a list of lists. Each list is a feature vector for one document.
         ## Each element in that list is the value of that feature in
         ## the document
-       
 
         # Initialize self.weight to zeros here.
         # HINT: Use np.zeros()
-        self.weight = None
+        rows = np.shape(self.X)[1]
+
+        self.weight = np.zeros((rows, 1))
 
         # Call self.gradientDescent to train your model
+        self.gradientDescent()
 
         ###End your code here
     
@@ -105,7 +111,8 @@ class LogisticRegression:
     def sigmoid(self, x):
         ### START YOUR CODE HERE
 
-
+        s = 1/(1 + np.exp(-x))
+    
         ### END YOUR CODE HERE
         return s
 
@@ -124,8 +131,12 @@ class LogisticRegression:
     def predict(self, x):
         assert x.shape[0] == 1, "x has the wrong shape. Expected a row vector, got: "+str(x.shape)
         ### Start your code here
-
-
+        product = np.dot(x,self.weight) + b
+        pred = self.sigmoid(product)
+        if pred >= 0.5:
+            return 1
+        else:
+            return 0
         ### End your code here
         return k
 
@@ -145,12 +156,21 @@ class LogisticRegression:
         X_Test = None # Use this as your feature vector (set to the value of CountVectorizer([input]))
         ## Start your code here
         ### Create your unigram feature vector here
-        
-        
+        vectorizer = self.vect
+        document = words.split()
+        print(document)
+        print(np.shape(document))
+        X_Test = vectorizer.transform(document)
         ###End your code here
         X_Test = X_Test.todense() # Do not change this line. it converts your sparse matrix a dense matrix
         ## Start you code here
         ## Perform you classification and addition of more features for INCLUDE_LEXICON here
+
+        print(np.shape(X_Test))
+        print(X_Test)
+        rows = np.shape(X_Test)[1]
+        print(rows)
+        return self.predict(rows)
 
 
         ### end your code here
@@ -166,7 +186,7 @@ class LogisticRegression:
     def loss(self, a, y):
         return (-1/y.shape[0])*(np.dot(y.T,(np.log(a))) + np.dot((1-y).T,(np.log(1-a))))
 
-    def gradientDescent(self, alpha=0.001, numiters=1000):
+    def gradientDescent(self, alpha=0.001, numiters=10):
         self.Y = np.array(self.Y).reshape((-1,1))
         loss = 0
         for i in range(numiters):
